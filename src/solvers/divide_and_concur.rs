@@ -1,4 +1,5 @@
 use crate::{errors::Error, Result, Solver, SolverSolution, State};
+use log::{info, trace};
 
 pub struct DivideAndConcurSolver<S, D, C, N>
 where
@@ -51,10 +52,15 @@ where
             let update = step(state.clone(), &self.divide, &self.concur, self.beta)?;
             delta = (self.norm)(&update, &state);
 
+            info!(target: "drs_solver_step", delta = delta, step = t; "divide_and_concur_step");
+            trace!(target: "drs_solver_step", state:? = state, update:? = state; "divide_and_concur_states");
+
             if delta < self.epsilon {
                 state = solution(state, &self.divide, &self.concur, self.beta)?;
                 return Ok((state, t, delta));
             }
+
+            state = update;
         }
 
         Err(Error::Convergence(self.n_steps, delta))
@@ -69,12 +75,24 @@ where
 {
     let gamma_a = -1f32 / beta;
     let gamma_b = 1f32 / beta;
+    trace!(target: "drs_solver_step", gamma_a = gamma_a; "divide_and_concur_step: gamma_a");
+    trace!(target: "drs_solver_step", gamma_b = gamma_b; "divide_and_concur_step: gamma_b");
 
     let fa = concur(state.clone())? * (1.0 + gamma_a) + state.clone() * -gamma_a;
     let fb = divide(state.clone())? * (1.0 + gamma_b) + state.clone() * -gamma_b;
+    trace!(target: "drs_solver_step", fa:? = fa; "divide_and_concur_step: fa");
+    trace!(target: "drs_solver_step", fb:? = fb; "divide_and_concur_step: fb");
 
-    let inner = concur(fb)? + divide(fa)? * -1f32;
+    let pafb = concur(fb)?;
+    let pbfa = divide(fa)?;
+    trace!(target: "drs_solver_step", pafb:? = pafb; "divide_and_concur_step: pafb");
+    trace!(target: "drs_solver_step", pbfa:? = pbfa; "divide_and_concur_step: pbfa");
+
+    let inner = pafb + pbfa * -1f32;
+    trace!(target: "drs_solver_step", inner:? = inner; "divide_and_concur_step: inner");
+
     let result = state + inner * beta;
+    trace!(target: "drs_solver_step", result:? = result; "divide_and_concur_step: result");
 
     Ok(result)
 }

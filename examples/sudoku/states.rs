@@ -42,7 +42,7 @@ impl SudokuState {
 
         let n = iroot(s1.len(), 3);
         let mut output = vec![Vec::with_capacity(n); n];
-        for r in 0..n {
+        for (r, row) in output.iter_mut().enumerate().take(n) {
             for c in 0..n {
                 let offset = r * n.pow(2) + c * n;
                 let mut max = f32::MIN;
@@ -59,7 +59,7 @@ impl SudokuState {
                         }
                     });
 
-                output[r].push(val + 1);
+                row.push(val + 1);
             }
         }
 
