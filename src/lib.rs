@@ -1,14 +1,20 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+pub mod errors;
+pub mod prelude;
+pub mod solvers;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+use std::ops::{Add, Mul};
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub type Result<T> = std::result::Result<T, crate::errors::Error>;
+pub type SolverSolution<T> = (T, usize, f32);
+
+pub trait State: Clone + std::fmt::Debug + Add<Output = Self> + Mul<f32, Output = Self> {}
+
+pub trait Solver<S, D, C, N>
+where
+    S: State,
+    D: Fn(S) -> Result<S>,
+    C: Fn(S) -> Result<S>,
+    N: Fn(&S, &S) -> f32,
+{
+    fn run(&self, initial_state: S) -> Result<SolverSolution<S>>;
 }
