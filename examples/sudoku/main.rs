@@ -2,10 +2,10 @@ mod projectors;
 mod states;
 
 use crate::{
-    projectors::{concur_projector, divide_projector, iroot, norm},
+    projectors::{concur_projector, divide_projector, norm},
     states::SudokuState,
 };
-use drs::prelude::{DivideAndConcurSolver, Result, Solver, State};
+use drs::prelude::{DivideAndConcurSolver, Result, Solver};
 use log::{set_max_level, LevelFilter};
 
 // This puzzle is taken from the New York Times Hard Sudoku from 5 Dec 2024

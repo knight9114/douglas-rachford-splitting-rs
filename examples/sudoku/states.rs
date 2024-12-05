@@ -45,8 +45,6 @@ impl SudokuState {
         for (r, row) in output.iter_mut().enumerate().take(n) {
             for c in 0..n {
                 let offset = r * n.pow(2) + c * n;
-                let mut max = f32::MIN;
-                let mut idx = n;
 
                 let (val, _) = s1[offset..offset + n]
                     .iter()

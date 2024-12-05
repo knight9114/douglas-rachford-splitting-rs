@@ -1,6 +1,6 @@
 use crate::states::{ConstraintState, SudokuState};
-use drs::{errors::Error, Result, State};
-use pathfinding::prelude::{kuhn_munkres, Matrix, Weights};
+use drs::{errors::Error, Result};
+use pathfinding::prelude::{kuhn_munkres, Matrix};
 
 pub fn divide_projector(state: SudokuState) -> Result<SudokuState> {
     let n = iroot(state.given.0.len(), 3);
