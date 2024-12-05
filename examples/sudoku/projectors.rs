@@ -3,10 +3,10 @@ use drs::{errors::Error, Result, State};
 use pathfinding::prelude::{kuhn_munkres, Matrix, Weights};
 
 pub fn divide_projector(state: SudokuState) -> Result<SudokuState> {
-    let n = iroot(state.0[0].0.len(), 3);
+    let n = iroot(state.given.0.len(), 3);
     let mut output = Vec::with_capacity(3);
 
-    for (i, s) in state.0.into_iter().enumerate() {
+    for (i, s) in state.states.into_iter().enumerate() {
         let indices = match i {
             0 => get_row_indices(n),
             1 => get_column_indices(n),
@@ -15,6 +15,7 @@ pub fn divide_projector(state: SudokuState) -> Result<SudokuState> {
         };
 
         let mut update = vec![0f32; n.pow(3)];
+        let s = s + state.given.clone();
         for inds in indices.iter().take(n) {
             let extracted = extract_and_round_values(&s.0, inds);
             let weights = Matrix::square_from_vec(extracted)
@@ -30,29 +31,35 @@ pub fn divide_projector(state: SudokuState) -> Result<SudokuState> {
         output.push(ConstraintState(update));
     }
 
-    Ok(SudokuState(output))
+    Ok(SudokuState {
+        given: state.given,
+        states: output,
+    })
 }
 
 pub fn concur_projector(state: SudokuState) -> Result<SudokuState> {
-    let c = state.0.len();
-    let n = state.0[0].0.len();
+    let c = state.states.len();
+    let n = state.given.0.len();
     let d = c as f32;
 
     let mut mean = ConstraintState(vec![0f32; n]);
-    for constraint in state.0.into_iter() {
+    for constraint in state.states.into_iter() {
         for (i, val) in constraint.0.into_iter().enumerate() {
             mean.0[i] += val / d;
         }
     }
 
-    Ok(SudokuState(vec![mean; 3]))
+    Ok(SudokuState {
+        given: state.given,
+        states: vec![mean; 3],
+    })
 }
 
 pub fn norm(current: &SudokuState, previous: &SudokuState) -> f32 {
-    let d = current.0.len() as f32;
+    let d = current.states.len() as f32;
     let mut delta = 0f32;
 
-    for (curr, prev) in current.0.iter().zip(previous.0.iter()) {
+    for (curr, prev) in current.states.iter().zip(previous.states.iter()) {
         let mut diff = 0f32;
         for (c, p) in curr.0.iter().zip(prev.0.iter()) {
             diff += (c - p).powi(2);
@@ -132,9 +139,9 @@ fn extract_and_round_values(vector: &[f32], indices: &[usize]) -> Vec<isize> {
 
 #[cfg(test)]
 mod tests {
-    use drs::solvers::divide_and_concur;
-
     use super::*;
+    use crate::states::ConstraintState;
+    use drs::solvers::divide_and_concur;
 
     #[test]
     fn test_isort_successful() {
@@ -214,82 +221,80 @@ mod tests {
         // ----+----
         // 2 3 | 4 1
         // 4 1 | 2 3
-        let solved = SudokuState(vec![
-            ConstraintState(vec![
-                1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-                0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-                0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
-            ]);
-            3
+        let given = ConstraintState(vec![
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+            0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0,
+            0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
         ]);
+        let solved = SudokuState{
+            given: given.clone(),
+            states: vec![given.clone(); 3],
+        };
         let output = divide_projector(solved.clone()).unwrap();
-        assert_eq!(output.0[0].0, solved.0[0].0);
-        assert_eq!(output.0[1].0, solved.0[1].0);
-        assert_eq!(output.0[2].0, solved.0[2].0);
+        assert_eq!(output.states[0].0, solved.states[0].0);
+        assert_eq!(output.states[1].0, solved.states[1].0);
+        assert_eq!(output.states[2].0, solved.states[2].0);
 
         // ? ? | 3 4
         // ? ? | 1 2
         // ----+----
         // 2 3 | ? ?
         // 4 1 | ? ?
-        let unsolved = SudokuState(vec![
-            ConstraintState(vec![
-                0.5, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 0.1, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
-                0.1, 0.1, 0.5, 0.1, 0.1, 0.1, 0.1, 0.5, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
-                0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.1, 0.1, 0.1, 0.5, 0.5, 0.1, 0.1, 0.1,
-                0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.1, 0.5, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1,
-            ]);
+        let unsolved = SudokuState{
+            given: ConstraintState(
+                vec![
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+                    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                    0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                    0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                ]
+            ),
+            states: vec![
+                ConstraintState(
+                    vec![
+                        0.5, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 0.1, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+                        0.1, 0.1, 0.5, 0.1, 0.1, 0.1, 0.1, 0.5, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+                        0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.1, 0.1, 0.1, 0.5, 0.5, 0.1, 0.1, 0.1,
+                        0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.1, 0.5, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1,
+                    ]
+                );
             3
-        ]);
+            ],
+        };
         let output = divide_projector(unsolved.clone()).unwrap();
-        assert_eq!(output.0[0].0, solved.0[0].0);
-        assert_eq!(output.0[1].0, solved.0[1].0);
-        assert_eq!(output.0[2].0, solved.0[2].0);
+        assert_eq!(output.states[0].0, solved.states[0].0);
+        assert_eq!(output.states[1].0, solved.states[1].0);
+        assert_eq!(output.states[2].0, solved.states[2].0);
     }
 
     #[test]
     #[rustfmt::skip]
     fn test_concur_projector() {
-        let input = SudokuState(vec![
-            ConstraintState(vec![
-                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-            ]);
-            3
-        ]);
+        let input = SudokuState{
+            given: ConstraintState(vec![1f32; 16 * 4]),
+            states: vec![ConstraintState(vec![1f32; 16 * 4]); 3],
+        };
         let output = concur_projector(input.clone()).unwrap();
-        assert_eq!(output.0[0].0, input.0[0].0);
-        assert_eq!(output.0[1].0, input.0[1].0);
-        assert_eq!(output.0[2].0, input.0[2].0);
+        assert_eq!(output.states[0].0, input.states[0].0);
+        assert_eq!(output.states[1].0, input.states[1].0);
+        assert_eq!(output.states[2].0, input.states[2].0);
     }
 
     #[test]
     #[rustfmt::skip]
     fn test_norm() {
-        let ones = SudokuState(vec![
-            ConstraintState(vec![
-                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
-            ]);
-            3
-        ]);
+        let ones = SudokuState{
+            given: ConstraintState(vec![1f32; 16 * 4]),
+            states: vec![ConstraintState(vec![1f32; 16 * 4]); 3],
+        };
         let delta = norm(&ones, &ones);
         assert_eq!(delta, 0f32);
 
-        let zeros = SudokuState(vec![
-            ConstraintState(vec![
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-            ]);
-            3
-        ]);
+        let zeros = SudokuState{
+            given: ConstraintState(vec![0f32; 16 * 4]),
+            states: vec![ConstraintState(vec![0f32; 16 * 4]); 3],
+        };
         let delta = norm(&ones, &zeros);
         assert_eq!(delta, 8f32);
     }
