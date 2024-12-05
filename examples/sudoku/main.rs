@@ -6,7 +6,7 @@ use crate::{
     projectors::{concur_projector, divide_projector, iroot, norm},
     states::SudokuState,
 };
-use drs::{solvers::divide_and_concur::DivideAndConcurSolver, Result, Solver, State};
+use drs::prelude::{divide_and_concur_solution, divide_and_concur_step, Result, Solver, State};
 
 const EASY: [usize; 81] = [
     // 5 6 ? | 9 ? 2 | 1 ? ?
@@ -26,15 +26,7 @@ const EASY: [usize; 81] = [
 ];
 
 fn main() -> Result<()> {
-    let states = SudokuState::from(EASY);
-    let solver =
-        DivideAndConcurSolver::new(divide_projector, concur_projector, norm, 1.0, 0.1, 100000);
-    let solution = solver.run(states)?;
-
-    println!(
-        "Solved sudoku in {} steps with delta {}",
-        solution.1, solution.2
-    );
+    let mut states = SudokuState::from(EASY);
 
     Ok(())
 }

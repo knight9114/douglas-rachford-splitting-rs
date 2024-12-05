@@ -12,7 +12,7 @@ impl Add for ConstraintState {
         Self(
             self.0
                 .into_iter()
-                .zip(rhs.0.into_iter())
+                .zip(rhs.0)
                 .map(|(l, r)| l + r)
                 .collect(),
         )
@@ -39,7 +39,7 @@ impl Add for SudokuState {
         Self(
             self.0
                 .into_iter()
-                .zip(rhs.0.into_iter())
+                .zip(rhs.0)
                 .map(|(l, r)| l + r)
                 .collect(),
         )

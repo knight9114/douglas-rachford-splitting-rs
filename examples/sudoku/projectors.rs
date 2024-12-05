@@ -15,14 +15,14 @@ pub fn divide_projector(state: SudokuState) -> Result<SudokuState> {
         };
 
         let mut update = vec![0f32; n.pow(3)];
-        for j in 0..n {
-            let extracted = extract_and_round_values(&s.0, &indices[j]);
+        for inds in indices.iter().take(n) {
+            let extracted = extract_and_round_values(&s.0, inds);
             let weights = Matrix::square_from_vec(extracted)
                 .map_err(|err| Error::Projection(Box::new(err)))?;
             let (_, assignments) = kuhn_munkres(&weights);
 
             for (r, c) in assignments.into_iter().enumerate() {
-                let idx = indices[j][r * n + c];
+                let idx = inds[r * n + c];
                 update[idx] = 1f32;
             }
         }
@@ -53,9 +53,11 @@ pub fn norm(current: &SudokuState, previous: &SudokuState) -> f32 {
     let mut delta = 0f32;
 
     for (curr, prev) in current.0.iter().zip(previous.0.iter()) {
+        let mut diff = 0f32;
         for (c, p) in curr.0.iter().zip(prev.0.iter()) {
-            delta += (c - p).powi(2) / d;
+            diff += (c - p).powi(2);
         }
+        delta += diff.sqrt() / d;
     }
 
     delta
@@ -177,38 +179,35 @@ mod tests {
     }
 
     #[test]
+    #[rustfmt::skip]
     fn test_get_column_indices() {
         let n = 4;
         let indices = get_column_indices(n);
         let truth = vec![
-            vec![0, 1, 2, 3, 16, 17, 18, 19, 32, 33, 34, 35, 48, 49, 50, 51],
-            vec![4, 5, 6, 7, 20, 21, 22, 23, 36, 37, 38, 39, 52, 53, 54, 55],
-            vec![8, 9, 10, 11, 24, 25, 26, 27, 40, 41, 42, 43, 56, 57, 58, 59],
-            vec![
-                12, 13, 14, 15, 28, 29, 30, 31, 44, 45, 46, 47, 60, 61, 62, 63,
-            ],
+            vec![ 0,  1,  2,  3, 16, 17, 18, 19, 32, 33, 34, 35, 48, 49, 50, 51],
+            vec![ 4,  5,  6,  7, 20, 21, 22, 23, 36, 37, 38, 39, 52, 53, 54, 55],
+            vec![ 8,  9, 10, 11, 24, 25, 26, 27, 40, 41, 42, 43, 56, 57, 58, 59],
+            vec![12, 13, 14, 15, 28, 29, 30, 31, 44, 45, 46, 47, 60, 61, 62, 63],
         ];
         assert_eq!(indices, truth);
     }
 
     #[test]
+    #[rustfmt::skip]
     fn test_get_block_indices() {
         let n = 4;
         let indices = get_block_indices(n);
         let truth = vec![
-            vec![0, 1, 2, 3, 4, 5, 6, 7, 16, 17, 18, 19, 20, 21, 22, 23],
-            vec![8, 9, 10, 11, 12, 13, 14, 15, 24, 25, 26, 27, 28, 29, 30, 31],
-            vec![
-                32, 33, 34, 35, 36, 37, 38, 39, 48, 49, 50, 51, 52, 53, 54, 55,
-            ],
-            vec![
-                40, 41, 42, 43, 44, 45, 46, 47, 56, 57, 58, 59, 60, 61, 62, 63,
-            ],
+            vec![ 0,  1,  2,  3,  4,  5,  6,  7, 16, 17, 18, 19, 20, 21, 22, 23],
+            vec![ 8,  9, 10, 11, 12, 13, 14, 15, 24, 25, 26, 27, 28, 29, 30, 31],
+            vec![32, 33, 34, 35, 36, 37, 38, 39, 48, 49, 50, 51, 52, 53, 54, 55],
+            vec![40, 41, 42, 43, 44, 45, 46, 47, 56, 57, 58, 59, 60, 61, 62, 63],
         ];
         assert_eq!(indices, truth);
     }
 
     #[test]
+    #[rustfmt::skip]
     fn test_divide_projector() {
         // 1 2 | 3 4
         // 3 4 | 1 2
@@ -247,5 +246,98 @@ mod tests {
         assert_eq!(output.0[0].0, solved.0[0].0);
         assert_eq!(output.0[1].0, solved.0[1].0);
         assert_eq!(output.0[2].0, solved.0[2].0);
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_concur_projector() {
+        let input = SudokuState(vec![
+            ConstraintState(vec![
+                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            ]);
+            3
+        ]);
+        let output = concur_projector(input.clone()).unwrap();
+        assert_eq!(output.0[0].0, input.0[0].0);
+        assert_eq!(output.0[1].0, input.0[1].0);
+        assert_eq!(output.0[2].0, input.0[2].0);
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_norm() {
+        let ones = SudokuState(vec![
+            ConstraintState(vec![
+                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+            ]);
+            3
+        ]);
+        let delta = norm(&ones, &ones);
+        assert_eq!(delta, 0f32);
+
+        let zeros = SudokuState(vec![
+            ConstraintState(vec![
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+            ]);
+            3
+        ]);
+        let delta = norm(&ones, &zeros);
+        assert_eq!(delta, 8f32);
+    }
+
+    #[test]
+    #[rustfmt::skip]
+    fn test_extract_and_round_values() {
+        let rows = get_row_indices(4);
+        let cols = get_column_indices(4);
+        let blks = get_block_indices(4);
+        let input = vec![
+            0.5, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1, 0.1, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+            0.1, 0.1, 0.5, 0.1, 0.1, 0.1, 0.1, 0.5, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+            0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.1, 0.1, 0.1, 0.5, 0.5, 0.1, 0.1, 0.1,
+            0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.1, 0.5, 0.1, 0.1, 0.1, 0.1, 0.5, 0.1,
+        ];
+
+        let values: Vec<Vec<isize>> = (0..4)
+            .map(|i| extract_and_round_values(&input[..], &rows[i]))
+            .collect();
+        let truth = vec![
+            vec![ 500, 100, 100, 100, 100, 500, 100, 100, 0, 0, 1000, 0, 0, 0, 0, 1000 ],
+            vec![ 100, 100, 500, 100, 100, 100, 100, 500, 1000, 0, 0, 0, 0, 1000, 0, 0 ],
+            vec![ 0, 1000, 0, 0, 0, 0, 1000, 0, 100, 100, 100, 500, 500, 100, 100, 100 ],
+            vec![ 0, 0, 0, 1000, 1000, 0, 0, 0, 100, 500, 100, 100, 100, 100, 500, 100 ],
+        ];
+        assert_eq!(values, truth);
+
+        let values: Vec<Vec<isize>> = (0..4)
+            .map(|i| extract_and_round_values(&input[..], &cols[i]))
+            .collect();
+        let truth = vec![
+            vec![ 500, 100, 100, 100, 100, 100, 500, 100, 0, 1000, 0, 0, 0, 0, 0, 1000 ],
+            vec![ 100, 500, 100, 100, 100, 100, 100, 500, 0, 0, 1000, 0, 1000, 0, 0, 0 ],
+            vec![ 0, 0, 1000, 0, 1000, 0, 0, 0, 100, 100, 100, 500, 100, 500, 100, 100 ],
+            vec![ 0, 0, 0, 1000, 0, 1000, 0, 0, 500, 100, 100, 100, 100, 100, 500, 100 ],
+        ];
+        assert_eq!(values, truth);
+
+        let values: Vec<Vec<isize>> = (0..4)
+            .map(|i| extract_and_round_values(&input[..], &blks[i]))
+            .collect();
+        let truth = vec![
+            vec![ 500, 100, 100, 100, 100, 500, 100, 100, 100, 100, 500, 100, 100, 100, 100, 500 ],
+            vec![ 0, 0, 1000, 0, 0, 0, 0, 1000, 1000, 0, 0, 0, 0, 1000, 0, 0 ],
+            vec![ 0, 1000, 0, 0, 0, 0, 1000, 0, 0, 0, 0, 1000, 1000, 0, 0, 0 ],
+            vec![ 100, 100, 100, 500, 500, 100, 100, 100, 100, 500, 100, 100, 100, 100, 500, 100 ],
+        ];
+        assert_eq!(values, truth);
     }
 }
