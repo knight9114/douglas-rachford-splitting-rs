@@ -3,18 +3,14 @@
 mod projectors;
 mod states;
 
-use crate::states::{Clause, SatState};
 use crate::projectors::{concur_projector, divide_projector, norm};
+use crate::states::{Clause, SatState};
 use drs::prelude::{DivideAndConcurSolver, Result, Solver};
 use rand::prelude::*;
-use tracing_subscriber::{EnvFilter, fmt, prelude::*};
+use tracing_subscriber::{fmt, prelude::*, EnvFilter};
 
 const NVARS: usize = 2;
-const INDICES: [[usize; 3]; 3] = [
-    [0, 0, 1],
-    [0, 1, 1],
-    [0, 1, 1],
-];
+const INDICES: [[usize; 3]; 3] = [[0, 0, 1], [0, 1, 1], [0, 1, 1]];
 const NEGATINGS: [[bool; 3]; 3] = [
     [false, false, false],
     [true, true, true],

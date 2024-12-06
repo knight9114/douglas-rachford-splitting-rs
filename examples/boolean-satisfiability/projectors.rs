@@ -3,9 +3,7 @@ use drs::{errors::Error, Result};
 use pathfinding::num_traits::{float::FloatCore, Float};
 
 pub fn divide_projector(state: SatState) -> Result<SatState> {
-    let solutions = state.clauses.into_iter()
-        .map(Clause::solve)
-        .collect();
+    let solutions = state.clauses.into_iter().map(Clause::solve).collect();
 
     Ok(SatState {
         clauses: solutions,
@@ -31,7 +29,8 @@ pub fn concur_projector(state: SatState) -> Result<SatState> {
     }
 
     Ok(SatState {
-        clauses: state.clauses
+        clauses: state
+            .clauses
             .into_iter()
             .map(|c| Clause::new(&mean[..], c.indices, c.negating))
             .collect(),
@@ -56,11 +55,7 @@ mod tests {
     use super::*;
 
     const VARS: [f32; 2] = [-0.2, 0.7];
-    const INDICES: [[usize; 3]; 3] = [
-        [0, 0, 1],
-        [0, 1, 1],
-        [0, 1, 1],
-    ];
+    const INDICES: [[usize; 3]; 3] = [[0, 0, 1], [0, 1, 1], [0, 1, 1]];
     const NEGATINGS: [[bool; 3]; 3] = [
         [false, false, false],
         [true, true, true],

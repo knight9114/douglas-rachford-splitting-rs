@@ -27,7 +27,7 @@ impl Clause {
             .values
             .iter()
             .zip(&self.negating)
-            .map(|(&val, &neg)| if neg { -1.0 * val} else { val })
+            .map(|(&val, &neg)| if neg { -1.0 * val } else { val })
             .collect();
 
         let mut putative: Vec<f32> = values
@@ -52,7 +52,7 @@ impl Clause {
         let solution = putative
             .into_iter()
             .zip(&self.negating)
-            .map(|(val, &neg)| if neg { -1.0 * val} else { val })
+            .map(|(val, &neg)| if neg { -1.0 * val } else { val })
             .collect();
 
         Self {
@@ -129,9 +129,7 @@ impl SatState {
             panic!("failed to set all variables");
         }
 
-        output.into_iter()
-            .map(|v| v == 1.0)
-            .collect()
+        output.into_iter().map(|v| v == 1.0).collect()
     }
 }
 
@@ -165,15 +163,17 @@ impl Mul<f32> for SatState {
 impl State for SatState {}
 
 fn argmax(vars: &[f32]) -> usize {
-    let (idx, _) = vars.iter()
-        .enumerate()
-        .fold((0, vars[0]), |(imax, vmax), (i, &v)| {
-            if vmax > v {
-                (imax, vmax)
-            } else {
-                (i, v)
-            }
-        });
+    let (idx, _) =
+        vars.iter().enumerate().fold(
+            (0, vars[0]),
+            |(imax, vmax), (i, &v)| {
+                if vmax > v {
+                    (imax, vmax)
+                } else {
+                    (i, v)
+                }
+            },
+        );
     idx
 }
 
@@ -185,11 +185,7 @@ mod tests {
     const VARS_2: [f32; 2] = [-0.2, -0.7];
     const VARS_3: [f32; 2] = [0.2, 0.7];
     const VARS_4: [f32; 2] = [0.2, -0.7];
-    const INDICES: [[usize; 3]; 3] = [
-        [0, 0, 1],
-        [0, 1, 1],
-        [0, 1, 1],
-    ];
+    const INDICES: [[usize; 3]; 3] = [[0, 0, 1], [0, 1, 1], [0, 1, 1]];
     const NEGATINGS: [[bool; 3]; 3] = [
         [false, false, false],
         [true, true, true],
@@ -202,10 +198,7 @@ mod tests {
         let indices: Vec<Vec<usize>> = INDICES.iter().map(Vec::from).collect();
         let negations: Vec<Vec<bool>> = NEGATINGS.iter().map(Vec::from).collect();
         let state = SatState::new(vars, indices, negations);
-        let solutions: Vec<Clause> = state.clauses
-            .into_iter()
-            .map(Clause::solve)
-            .collect();
+        let solutions: Vec<Clause> = state.clauses.into_iter().map(Clause::solve).collect();
         assert_eq!(solutions[0].values, vec![-1.0, -1.0, 1.0]);
         assert_eq!(solutions[1].values, vec![-1.0, 1.0, 1.0]);
         assert_eq!(solutions[2].values, vec![-1.0, 1.0, 1.0]);
@@ -214,10 +207,7 @@ mod tests {
         let indices: Vec<Vec<usize>> = INDICES.iter().map(Vec::from).collect();
         let negations: Vec<Vec<bool>> = NEGATINGS.iter().map(Vec::from).collect();
         let state = SatState::new(vars, indices, negations);
-        let solutions: Vec<Clause> = state.clauses
-            .into_iter()
-            .map(Clause::solve)
-            .collect();
+        let solutions: Vec<Clause> = state.clauses.into_iter().map(Clause::solve).collect();
         assert_eq!(solutions[0].values, vec![1.0, 1.0, -1.0]);
         assert_eq!(solutions[1].values, vec![-1.0, -1.0, -1.0]);
         assert_eq!(solutions[2].values, vec![-1.0, -1.0, -1.0]);
@@ -226,10 +216,7 @@ mod tests {
         let indices: Vec<Vec<usize>> = INDICES.iter().map(Vec::from).collect();
         let negations: Vec<Vec<bool>> = NEGATINGS.iter().map(Vec::from).collect();
         let state = SatState::new(vars, indices, negations);
-        let solutions: Vec<Clause> = state.clauses
-            .into_iter()
-            .map(Clause::solve)
-            .collect();
+        let solutions: Vec<Clause> = state.clauses.into_iter().map(Clause::solve).collect();
         assert_eq!(solutions[0].values, vec![1.0, 1.0, 1.0]);
         assert_eq!(solutions[1].values, vec![-1.0, 1.0, 1.0]);
         assert_eq!(solutions[2].values, vec![1.0, 1.0, 1.0]);
@@ -238,10 +225,7 @@ mod tests {
         let indices: Vec<Vec<usize>> = INDICES.iter().map(Vec::from).collect();
         let negations: Vec<Vec<bool>> = NEGATINGS.iter().map(Vec::from).collect();
         let state = SatState::new(vars, indices, negations);
-        let solutions: Vec<Clause> = state.clauses
-            .into_iter()
-            .map(Clause::solve)
-            .collect();
+        let solutions: Vec<Clause> = state.clauses.into_iter().map(Clause::solve).collect();
         assert_eq!(solutions[0].values, vec![1.0, 1.0, -1.0]);
         assert_eq!(solutions[1].values, vec![1.0, -1.0, -1.0]);
         assert_eq!(solutions[2].values, vec![-1.0, -1.0, -1.0]);

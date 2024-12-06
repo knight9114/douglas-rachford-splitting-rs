@@ -46,16 +46,16 @@ impl SudokuState {
             for c in 0..n {
                 let offset = r * n.pow(2) + c * n;
 
-                let (val, _) = s1[offset..offset + n]
-                    .iter()
-                    .enumerate()
-                    .fold((0, s1[offset]), |(imax, vmax), (i, v)| {
+                let (val, _) = s1[offset..offset + n].iter().enumerate().fold(
+                    (0, s1[offset]),
+                    |(imax, vmax), (i, v)| {
                         if &vmax > v {
                             (imax, vmax)
                         } else {
                             (i, *v)
                         }
-                    });
+                    },
+                );
 
                 row.push(val + 1);
             }
