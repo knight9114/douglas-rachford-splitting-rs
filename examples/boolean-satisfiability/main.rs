@@ -1,10 +1,8 @@
-#![allow(unused_imports, unused_variables, dead_code)]
-
 mod projectors;
 mod states;
 
 use crate::projectors::{concur_projector, divide_projector, norm};
-use crate::states::{Clause, SatState};
+use crate::states::SatState;
 use drs::prelude::{DivideAndConcurSolver, Result, Solver};
 use rand::prelude::*;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
@@ -39,7 +37,7 @@ fn main() -> Result<()> {
 
 fn create_sat_instance() -> SatState {
     let mut rng = thread_rng();
-    let vars: [f32; 2] = rng.gen();
+    let vars: [f32; NVARS] = rng.gen();
     let indices: Vec<Vec<usize>> = INDICES.iter().map(Vec::from).collect();
     let negations: Vec<Vec<bool>> = NEGATINGS.iter().map(Vec::from).collect();
 

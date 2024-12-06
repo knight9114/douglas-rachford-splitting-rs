@@ -1,6 +1,4 @@
 use drs::State;
-use pathfinding::num_traits::Float;
-use rand::prelude::*;
 use std::ops::{Add, Mul};
 
 #[derive(Debug, Clone)]

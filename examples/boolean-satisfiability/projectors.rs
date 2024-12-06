@@ -1,6 +1,5 @@
 use crate::states::{Clause, SatState};
-use drs::{errors::Error, Result};
-use pathfinding::num_traits::{float::FloatCore, Float};
+use drs::Result;
 
 pub fn divide_projector(state: SatState) -> Result<SatState> {
     let solutions = state.clauses.into_iter().map(Clause::solve).collect();
