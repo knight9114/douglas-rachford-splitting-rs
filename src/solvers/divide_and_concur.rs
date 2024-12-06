@@ -1,6 +1,18 @@
-use crate::{errors::Error, Result, Solver, SolverSolution, State};
+//! # *Divide and Concur* 
+//!
+//! This implementation follows the paper, [*Divide and concur: A general approach to constraint
+//! satisfaction*](https://arxiv.org/abs/0801.0222). The algorithm, like most DRS algorithms, uses
+//! two projector functions, *divide* and *concur*.
+//!
+//! The divide projector individually solves the current state for each constraint. The concur
+//! projector maps a constraint solution into Euclidean space. Intuitively, the concur projector
+//! acts as a sink and moves each constraint solution towards one that satisfies all of the
+//! constraints.
+
+use crate::{errors::DrsError, Result, Solver, SolverSolution, State};
 use tracing::{event, span, Level};
 
+/// Solver that follows the *Divide and Concur* algorithm
 pub struct DivideAndConcurSolver<S, D, C, N>
 where
     S: State,
@@ -24,6 +36,17 @@ where
     C: Fn(S) -> Result<S>,
     N: Fn(&S, &S) -> f32,
 {
+    /// Constructs a new `DivideAndConcurSolver`
+    ///
+    /// ## Arguments
+    /// * `divide`: Projector that solves the state for each individual constraint
+    /// * `concur`: Projector that computes the Euclidean mean of the states
+    /// * `norm`: Function that computes the difference between two states
+    /// * `beta`: Coefficient used in the [difference map] operation
+    /// * `epsilon`: Difference between two states that represents a fixed-point solution
+    /// * `n_steps`: Number of steps to run the solver before aborting
+    ///
+    /// [difference map]: https://en.wikipedia.org/wiki/Difference-map_algorithm
     pub fn new(divide: D, concur: C, norm: N, beta: f32, epsilon: f32, n_steps: usize) -> Self {
         Self {
             divide,
@@ -66,10 +89,16 @@ where
             state = update;
         }
 
-        Err(Error::Convergence(self.n_steps, delta))
+        Err(DrsError::Convergence(self.n_steps, delta))
     }
 }
 
+/// Executes a single step of the *Divide and Concur* algorithm
+///
+/// $$
+/// \begin{equation}
+/// \end{equation}
+/// $$
 pub fn step<S, D, C>(state: S, divide: D, concur: C, beta: f32) -> Result<S>
 where
     S: State,

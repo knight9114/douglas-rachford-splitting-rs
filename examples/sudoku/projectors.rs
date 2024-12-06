@@ -141,7 +141,6 @@ fn extract_and_round_values(vector: &[f32], indices: &[usize]) -> Vec<isize> {
 mod tests {
     use super::*;
     use crate::states::ConstraintState;
-    use drs::solvers::divide_and_concur;
 
     #[test]
     fn test_isort_successful() {

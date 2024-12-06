@@ -1,5 +1,5 @@
 #[derive(Debug, thiserror::Error)]
-pub enum Error {
+pub enum DrsError {
     #[error("convergence error: failed to converge, delta={1}, after {0} steps")]
     Convergence(usize, f32),
 
