@@ -1,8 +1,7 @@
 mod projectors;
 mod states;
 
-use crate::projectors::{concur_projector, divide_projector, norm};
-use crate::states::SatState;
+use crate::{projectors::{concur_projector, divide_projector, norm}, states::SatState};
 use drs::prelude::{DivideAndConcurSolver, Result, Solver};
 use rand::prelude::*;
 use tracing_subscriber::{fmt, prelude::*, EnvFilter};
