@@ -72,7 +72,7 @@ impl Add for Clause {
             values: self
                 .values
                 .into_iter()
-                .zip(rhs.values.into_iter())
+                .zip(rhs.values)
                 .map(|(l, r)| l + r)
                 .collect(),
             indices: self.indices,
@@ -106,7 +106,7 @@ impl SatState {
         let nvars = variables.len();
         let clauses = indices
             .into_iter()
-            .zip(negating.into_iter())
+            .zip(negating)
             .map(|(i, n)| Clause::new(&variables[..], i, n))
             .collect();
 
@@ -143,7 +143,7 @@ impl Add for SatState {
             clauses: self
                 .clauses
                 .into_iter()
-                .zip(rhs.clauses.into_iter())
+                .zip(rhs.clauses)
                 .map(|(l, r)| l + r)
                 .collect(),
             nvars: self.nvars,
