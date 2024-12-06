@@ -40,25 +40,22 @@ pub fn concur_projector(state: SatState) -> Result<SatState> {
 }
 
 pub fn norm(current: &SatState, previous: &SatState) -> f32 {
-    let d = current.clauses.len() as f32;
     let mut delta = 0f32;
-
     for (curr, prev) in current.clauses.iter().zip(previous.clauses.iter()) {
-        let mut diff = 0f32;
-        for (c, p) in curr.values.iter().zip(prev.values.iter()) {
-            diff += (c - p).powi(2);
+        for (&c, &p) in curr.values.iter().zip(prev.values.iter()) {
+            if c.signum() != p.signum() {
+                delta += 1.0;
+            }
         }
-        delta += diff.sqrt() / d;
     }
-
-    delta
+    delta / current.clauses.len() as f32
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    const VARS: [f32; 2] = [0.2, 0.7];
+    const VARS: [f32; 2] = [-0.2, 0.7];
     const INDICES: [[usize; 3]; 3] = [
         [0, 0, 1],
         [0, 1, 1],
@@ -86,14 +83,14 @@ mod tests {
         let negations: Vec<Vec<bool>> = NEGATINGS.iter().map(Vec::from).collect();
         let state = SatState::new(vars, indices, negations);
         let update = divide_projector(state).unwrap();
-        assert_eq!(update.clauses[0].values, vec![0.0, 0.0, 1.0]);
-        assert_eq!(update.clauses[1].values, vec![0.0, 1.0, 1.0]);
-        assert_eq!(update.clauses[2].values, vec![0.0, 1.0, 1.0]);
+        assert_eq!(update.clauses[0].values, vec![-1.0, -1.0, 1.0]);
+        assert_eq!(update.clauses[1].values, vec![-1.0, 1.0, 1.0]);
+        assert_eq!(update.clauses[2].values, vec![-1.0, 1.0, 1.0]);
 
         let check = divide_projector(update).unwrap();
-        assert_eq!(check.clauses[0].values, vec![0.0, 0.0, 1.0]);
-        assert_eq!(check.clauses[1].values, vec![0.0, 1.0, 1.0]);
-        assert_eq!(check.clauses[2].values, vec![0.0, 1.0, 1.0]);
+        assert_eq!(check.clauses[0].values, vec![-1.0, -1.0, 1.0]);
+        assert_eq!(check.clauses[1].values, vec![-1.0, 1.0, 1.0]);
+        assert_eq!(check.clauses[2].values, vec![-1.0, 1.0, 1.0]);
     }
 
     #[test]
@@ -104,13 +101,13 @@ mod tests {
         let state = SatState::new(vars, indices, negations);
         let state = divide_projector(state).unwrap();
         let update = concur_projector(state).unwrap();
-        assert_eq!(update.clauses[0].values, vec![0.0, 0.0, 1.0]);
-        assert_eq!(update.clauses[1].values, vec![0.0, 1.0, 1.0]);
-        assert_eq!(update.clauses[2].values, vec![0.0, 1.0, 1.0]);
+        assert_eq!(update.clauses[0].values, vec![-1.5, -1.5, 1.5]);
+        assert_eq!(update.clauses[1].values, vec![-1.5, 1.5, 1.5]);
+        assert_eq!(update.clauses[2].values, vec![-1.5, 1.5, 1.5]);
 
         let check = divide_projector(update).unwrap();
-        assert_eq!(check.clauses[0].values, vec![0.0, 0.0, 1.0]);
-        assert_eq!(check.clauses[1].values, vec![0.0, 1.0, 1.0]);
-        assert_eq!(check.clauses[2].values, vec![0.0, 1.0, 1.0]);
+        assert_eq!(check.clauses[0].values, vec![-1.0, -1.0, 1.0]);
+        assert_eq!(check.clauses[1].values, vec![-1.0, 1.0, 1.0]);
+        assert_eq!(check.clauses[2].values, vec![-1.0, 1.0, 1.0]);
     }
 }

@@ -27,18 +27,18 @@ impl Clause {
             .values
             .iter()
             .zip(&self.negating)
-            .map(|(&val, &neg)| if neg { 1f32 - val } else { val })
+            .map(|(&val, &neg)| if neg { -1.0 * val} else { val })
             .collect();
 
         let mut putative: Vec<f32> = values
             .iter()
-            .map(|&val| if val < 0.5 { 0.0 } else { 1.0 })
+            .map(|&val| if val < 0.0 { -1.0 } else { 1.0 })
             .collect();
 
-        if putative.iter().all(|&v| v < 0.5) {
+        if putative.iter().all(|&v| v < 0.0) {
             let mut costs = vec![0f32; self.n];
-            for (&i, &v) in self.indices.iter().zip(self.values.iter()) {
-                costs[i] += 0.5 - v;
+            for (&i, &v) in self.indices.iter().zip(values.iter()) {
+                costs[i] += v;
             }
 
             let idx = argmax(&costs[..]);
@@ -52,7 +52,7 @@ impl Clause {
         let solution = putative
             .into_iter()
             .zip(&self.negating)
-            .map(|(val, &neg)| if neg { 1f32 - val } else { val })
+            .map(|(val, &neg)| if neg { -1.0 * val} else { val })
             .collect();
 
         Self {
@@ -181,7 +181,10 @@ fn argmax(vars: &[f32]) -> usize {
 mod tests {
     use super::*;
 
-    const VARS: [f32; 2] = [0.2, 0.7];
+    const VARS_1: [f32; 2] = [-0.2, 0.7];
+    const VARS_2: [f32; 2] = [-0.2, -0.7];
+    const VARS_3: [f32; 2] = [0.2, 0.7];
+    const VARS_4: [f32; 2] = [0.2, -0.7];
     const INDICES: [[usize; 3]; 3] = [
         [0, 0, 1],
         [0, 1, 1],
@@ -195,7 +198,7 @@ mod tests {
 
     #[test]
     fn test_clause_solve() {
-        let vars = Vec::from(VARS);
+        let vars = Vec::from(VARS_1);
         let indices: Vec<Vec<usize>> = INDICES.iter().map(Vec::from).collect();
         let negations: Vec<Vec<bool>> = NEGATINGS.iter().map(Vec::from).collect();
         let state = SatState::new(vars, indices, negations);
@@ -203,8 +206,44 @@ mod tests {
             .into_iter()
             .map(Clause::solve)
             .collect();
-        assert_eq!(solutions[0].values, vec![0.0, 0.0, 1.0]);
-        assert_eq!(solutions[1].values, vec![0.0, 1.0, 1.0]);
-        assert_eq!(solutions[2].values, vec![0.0, 1.0, 1.0]);
+        assert_eq!(solutions[0].values, vec![-1.0, -1.0, 1.0]);
+        assert_eq!(solutions[1].values, vec![-1.0, 1.0, 1.0]);
+        assert_eq!(solutions[2].values, vec![-1.0, 1.0, 1.0]);
+
+        let vars = Vec::from(VARS_2);
+        let indices: Vec<Vec<usize>> = INDICES.iter().map(Vec::from).collect();
+        let negations: Vec<Vec<bool>> = NEGATINGS.iter().map(Vec::from).collect();
+        let state = SatState::new(vars, indices, negations);
+        let solutions: Vec<Clause> = state.clauses
+            .into_iter()
+            .map(Clause::solve)
+            .collect();
+        assert_eq!(solutions[0].values, vec![1.0, 1.0, -1.0]);
+        assert_eq!(solutions[1].values, vec![-1.0, -1.0, -1.0]);
+        assert_eq!(solutions[2].values, vec![-1.0, -1.0, -1.0]);
+
+        let vars = Vec::from(VARS_3);
+        let indices: Vec<Vec<usize>> = INDICES.iter().map(Vec::from).collect();
+        let negations: Vec<Vec<bool>> = NEGATINGS.iter().map(Vec::from).collect();
+        let state = SatState::new(vars, indices, negations);
+        let solutions: Vec<Clause> = state.clauses
+            .into_iter()
+            .map(Clause::solve)
+            .collect();
+        assert_eq!(solutions[0].values, vec![1.0, 1.0, 1.0]);
+        assert_eq!(solutions[1].values, vec![-1.0, 1.0, 1.0]);
+        assert_eq!(solutions[2].values, vec![1.0, 1.0, 1.0]);
+
+        let vars = Vec::from(VARS_4);
+        let indices: Vec<Vec<usize>> = INDICES.iter().map(Vec::from).collect();
+        let negations: Vec<Vec<bool>> = NEGATINGS.iter().map(Vec::from).collect();
+        let state = SatState::new(vars, indices, negations);
+        let solutions: Vec<Clause> = state.clauses
+            .into_iter()
+            .map(Clause::solve)
+            .collect();
+        assert_eq!(solutions[0].values, vec![1.0, 1.0, -1.0]);
+        assert_eq!(solutions[1].values, vec![1.0, -1.0, -1.0]);
+        assert_eq!(solutions[2].values, vec![-1.0, -1.0, -1.0]);
     }
 }
