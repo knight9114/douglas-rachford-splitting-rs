@@ -6,7 +6,6 @@ use crate::{
     states::SudokuState,
 };
 use drs::prelude::{DivideAndConcurSolver, Result, Solver};
-use log::{set_max_level, LevelFilter};
 
 // This puzzle is taken from the New York Times Hard Sudoku from 5 Dec 2024
 #[rustfmt::skip]
@@ -37,7 +36,6 @@ const PUZZLE: [usize; 81] = [
 ];
 
 fn main() -> Result<()> {
-    set_max_level(LevelFilter::Trace);
     let states = SudokuState::from(PUZZLE);
     let solver =
         DivideAndConcurSolver::new(divide_projector, concur_projector, norm, 0.9, 1.0, 100000);
