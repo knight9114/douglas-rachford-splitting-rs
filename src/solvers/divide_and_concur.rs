@@ -1,4 +1,5 @@
 use crate::{errors::Error, Result, Solver, SolverSolution, State};
+use tracing::{event, span, Level};
 
 pub struct DivideAndConcurSolver<S, D, C, N>
 where
@@ -48,11 +49,14 @@ where
         let mut delta = f32::NAN;
 
         for t in 0..self.n_steps {
+            let span = span!(tracing::Level::DEBUG, "divide_and_concur_outer_step");
+            let _guard = span.enter();
+
             let update = step(state.clone(), &self.divide, &self.concur, self.beta)?;
             delta = (self.norm)(&update, &state);
 
-            //info!(target: "drs_solver_step", delta = delta, step = t; "divide_and_concur_step");
-            //trace!(target: "drs_solver_step", state:? = state, update:? = state; "divide_and_concur_states");
+            event!(Level::INFO, delta, step = t);
+            event!(Level::DEBUG, ?state, ?update);
 
             if delta < self.epsilon {
                 state = solution(state, &self.divide, &self.concur, self.beta)?;
@@ -72,26 +76,29 @@ where
     D: Fn(S) -> Result<S>,
     C: Fn(S) -> Result<S>,
 {
+    let span = span!(tracing::Level::DEBUG, "divide_and_concur_inner_step");
+    let _guard = span.enter();
+
     let gamma_a = -1f32 / beta;
     let gamma_b = 1f32 / beta;
-    //trace!(target: "drs_solver_step", gamma_a = gamma_a; "divide_and_concur_step: gamma_a");
-    //trace!(target: "drs_solver_step", gamma_b = gamma_b; "divide_and_concur_step: gamma_b");
+    event!(Level::DEBUG, gamma_a);
+    event!(Level::DEBUG, gamma_b);
 
     let fa = concur(state.clone())? * (1.0 + gamma_a) + state.clone() * -gamma_a;
     let fb = divide(state.clone())? * (1.0 + gamma_b) + state.clone() * -gamma_b;
-    //trace!(target: "drs_solver_step", fa:? = fa; "divide_and_concur_step: fa");
-    //trace!(target: "drs_solver_step", fb:? = fb; "divide_and_concur_step: fb");
+    event!(Level::DEBUG, ?fa);
+    event!(Level::DEBUG, ?fb);
 
     let pafb = concur(fb)?;
     let pbfa = divide(fa)?;
-    //trace!(target: "drs_solver_step", pafb:? = pafb; "divide_and_concur_step: pafb");
-    //trace!(target: "drs_solver_step", pbfa:? = pbfa; "divide_and_concur_step: pbfa");
+    event!(Level::DEBUG, ?pafb);
+    event!(Level::DEBUG, ?pbfa);
 
     let inner = pafb + pbfa * -1f32;
-    //trace!(target: "drs_solver_step", inner:? = inner; "divide_and_concur_step: inner");
+    event!(Level::DEBUG, ?inner);
 
     let result = state + inner * beta;
-    //trace!(target: "drs_solver_step", result:? = result; "divide_and_concur_step: result");
+    event!(Level::DEBUG, ?result);
 
     Ok(result)
 }

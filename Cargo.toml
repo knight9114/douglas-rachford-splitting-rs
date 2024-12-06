@@ -5,8 +5,10 @@ edition = "2021"
 
 [dependencies]
 thiserror = "2.0.4"
+tracing = "0.1.41"
 
 [dev-dependencies]
 pathfinding = "4.11.0"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
+tracing-subscriber = "0.3.19"

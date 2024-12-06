@@ -36,6 +36,8 @@ const PUZZLE: [usize; 81] = [
 ];
 
 fn main() -> Result<()> {
+    tracing_subscriber::fmt::init();
+
     let states = SudokuState::from(PUZZLE);
     let solver =
         DivideAndConcurSolver::new(divide_projector, concur_projector, norm, 0.9, 1.0, 100000);
