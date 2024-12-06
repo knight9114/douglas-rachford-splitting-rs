@@ -7,6 +7,7 @@ use crate::states::{Clause, SatState};
 use crate::projectors::{concur_projector, divide_projector, norm};
 use drs::prelude::{DivideAndConcurSolver, Result, Solver};
 use rand::prelude::*;
+use tracing_subscriber::{EnvFilter, fmt, prelude::*};
 
 const NVARS: usize = 2;
 const INDICES: [[usize; 3]; 3] = [
@@ -21,9 +22,14 @@ const NEGATINGS: [[bool; 3]; 3] = [
 ];
 
 fn main() -> Result<()> {
+    tracing_subscriber::registry()
+        .with(fmt::layer())
+        .with(EnvFilter::from_default_env())
+        .init();
+
     let states = create_sat_instance();
     let solver =
-        DivideAndConcurSolver::new(divide_projector, concur_projector, norm, 1.0, 0.7, 5000);
+        DivideAndConcurSolver::new(divide_projector, concur_projector, norm, 1.0, 0.1, 100);
     let (states, steps, delta) = solver.run(states)?;
 
     println!("Solved in {steps} steps, with delta={delta}");
@@ -36,8 +42,9 @@ fn main() -> Result<()> {
 }
 
 fn create_sat_instance() -> SatState {
-    let mut rng = thread_rng();
-    let vars: [f32; 2] = rng.gen();
+    //let mut rng = thread_rng();
+    //let vars: [f32; 2] = rng.gen();
+    let vars = [0.3, 0.2];
     println!("{:?}", vars);
     let indices: Vec<Vec<usize>> = INDICES.iter().map(Vec::from).collect();
     let negations: Vec<Vec<bool>> = NEGATINGS.iter().map(Vec::from).collect();
